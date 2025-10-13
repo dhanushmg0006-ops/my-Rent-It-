@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  name           String?
+  email          String?   @unique
+  role           String    @default("user") // "user", "admin", "delivery"
+  isVerified     Boolean   @default(false)  // <-- verification flag
+  phone          String?
+  aadharNumber   String?
+  bankAccount    String?
+  image          String?
+  hashedPassword String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  deliveryPerson DeliveryPerson?
+  listings       Listing[]
+  reservations   Reservation[]
+  payments       Payment[]
+  addresses      Address[]
+  refunds        Refund[]
+  accounts       Account[]
+  sessions       Session[]
+}
+
+
+model DeliveryPerson {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @unique @db.ObjectId
+  phone         String
+  aadhaarNumber String
+  bankAccount   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries Delivery[]
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Address {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  street     String
+  city       String
+  state      String
+  postalCode String
+  country    String
+  phone      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries Delivery[]
+}
+
+model Listing {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String
+  imageSrc      String
+  createdAt     DateTime @default(now())
+  category      String
+  itemCount     Int
+  locationValue String
+  userId        String   @db.ObjectId
+  price         Int
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+}
+
+model Reservation {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  listingId  String   @db.ObjectId
+  startDate  DateTime
+  endDate    DateTime
+  totalPrice Int
+  status     String   @default("active") // "active" or "cancelled"
+  createdAt  DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing  Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  payments Payment[]
+  delivery Delivery?
+  refunds  Refund[]
+}
+
+model Payment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId   String
+  paymentId String?
+  signature String?
+  amount    Int
+  currency  String   @default("INR")
+  status    String   @default("created")
+  createdAt DateTime @default(now())
+
+  userId        String  @db.ObjectId
+  reservationId String? @db.ObjectId
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  refunds     Refund[]
+}
+
+model Delivery {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  reservationId    String   @unique @db.ObjectId
+  addressId        String   @db.ObjectId
+  deliveryPersonId String?  @db.ObjectId
+  status           String   @default("pending") // pending, dispatched, out-for-delivery, delivered
+  trackingId       String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  reservation    Reservation     @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  address        Address         @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  deliveryPerson DeliveryPerson? @relation(fields: [deliveryPersonId], references: [id], onDelete: SetNull)
+}
+
+
+
+model Refund {
+  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  paymentId     String @db.ObjectId
+  reservationId String @db.ObjectId
+  userId        String @db.ObjectId
+
+  reason    String?
+  status    String   @default("pending")
+  amount    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payment     Payment     @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

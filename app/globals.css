@@ -1,0 +1,179 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+:root {
+  height: 100%;
+}
+
+/* Marketplace base theme */
+html {
+  background: #F3F7FF; /* brand.light */
+  color: #111827;      /* ink-900 */
+}
+
+/* Remove inversion on images */
+html img {
+  filter: none !important;
+}
+
+/* Leaflet map fixes */
+.leaflet-bottom,
+.leaflet-control,
+.leaflet-pane,
+.leaflet-top {
+  z-index: 0 !important;
+}
+
+.rdrMonth {
+  width: 100% !important;
+}
+
+.rdrCalendarWrapper {
+  font-size: 16px !important;
+  width: 100% !important;
+}
+
+/* Custom Animations */
+@keyframes slide-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.slide-in-from-left-4 {
+  animation: slide-in-from-left 0.7s ease-out;
+}
+
+.scale-in {
+  animation: scale-in 0.3s ease-out;
+}
+
+/* Marquee animation for horizontal scrolling */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.marquee-track {
+  display: inline-flex;
+  animation: marquee 60s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Components */
+.app-navbar {
+  @apply bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200/50;
+}
+
+/* Utilities */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.search-pill {
+  @apply w-full md:w-auto py-2.5 pl-4 pr-2 rounded-full border-2 border-surface-200 bg-white shadow-sm hover:shadow-md transition;
+}
+
+.chip {
+  @apply rounded-full px-3 py-1.5 text-sm bg-surface-100 hover:bg-white border border-surface-200 text-ink-700 transition;
+}
+
+.btn-primary {
+  @apply bg-brand text-white hover:bg-brand-dark border border-brand rounded-lg font-semibold;
+}
+
+.btn-secondary {
+  @apply bg-brand-yellow text-ink-900 hover:brightness-95 border border-brand-yellow rounded-lg font-semibold;
+}
+
+/* Marquee utilities for Flipkart-style rails */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.marquee { position: relative; overflow: hidden; }
+.marquee-track {
+  display: inline-flex;
+  gap: 1rem;
+  will-change: transform;
+  animation: marquee-scroll 28s linear infinite;
+}
+.marquee:hover .marquee-track { animation-play-state: paused; }
+@keyframes marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+/* Sheen overlay for cards */
+.sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sheen::before {
+  content: "";
+  position: absolute;
+  top: -100%;
+  left: -50%;
+  width: 50%;
+  height: 300%;
+  transform: rotate(25deg);
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.35) 50%, rgba(255,255,255,0) 100%);
+  transition: transform .6s ease;
+}
+.group:hover .sheen::before {
+  transform: translateX(200%) rotate(25deg);
+}
+
+/* Hide horizontal scrollbar for offer/deals rails */
+ 
