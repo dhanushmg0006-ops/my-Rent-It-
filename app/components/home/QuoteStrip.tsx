@@ -44,8 +44,8 @@ const QuoteStrip = () => {
         </div>
 
         {/* Floating quote marks */}
-        <div className="absolute top-4 right-4 text-6xl text-purple-200 opacity-30 font-serif">"</div>
-        <div className="absolute bottom-4 left-4 text-4xl text-pink-200 opacity-20 font-serif">"</div>
+        <div className="absolute top-4 right-4 text-6xl text-purple-200 opacity-30 font-serif">&ldquo;</div>
+        <div className="absolute bottom-4 left-4 text-4xl text-pink-200 opacity-20 font-serif">&rdquo;</div>
       </div>
     </div>
   );

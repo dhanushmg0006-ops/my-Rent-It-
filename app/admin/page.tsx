@@ -86,7 +86,7 @@ const AdminDashboard = () => {
     };
 
     fetchAdminData();
-  }, []);
+  }, [router]);
 
   if (loading) return <div className="p-8">Loading...</div>;
 
