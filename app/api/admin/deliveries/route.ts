@@ -182,10 +182,19 @@ export async function POST(request: Request) {
 
     // Handle special actions first
     if (deliveryId === 'reset-all') {
+      // Only reset deliveries that are NOT delivered or cancelled
       await prisma.delivery.updateMany({
+        where: {
+          NOT: {
+            OR: [
+              { status: 'delivered' },
+              { status: 'cancelled' }
+            ]
+          }
+        },
         data: { deliveryPersonId: null, status: 'pending' }
       });
-      return NextResponse.json({ ok: true, message: 'All deliveries reset to unassigned' });
+      return NextResponse.json({ ok: true, message: 'Non-delivered deliveries reset to unassigned' });
     }
 
     if (action === 'update-address' && deliveryId) {
