@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import getCurrentUser from "@/app/actions/getCurrentUser";
 
+export const dynamic = 'force-dynamic';
+
 // Simple health check endpoint for debugging
 export async function HEAD() {
   try {
@@ -15,7 +17,9 @@ export async function HEAD() {
     return new Response(JSON.stringify({ status: 'ok', userCount }), { status: 200 });
   } catch (error) {
     console.error('Database connection failed:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }), { status: 500 });
   }
 }
 
@@ -51,7 +55,7 @@ export async function GET() {
     console.log('User is admin, proceeding with queries');
 
     // Get all deliveries for admin view - simplified queries
-    let unassignedDeliveries = [], allDeliveries = [], deliveryUsers = [];
+    let unassignedDeliveries: any[] = [], allDeliveries: any[] = [], deliveryUsers: any[] = [];
 
     try {
       console.log('Fetching unassigned deliveries...');

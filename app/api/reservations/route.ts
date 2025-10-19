@@ -75,13 +75,19 @@ export async function POST(request: Request) {
         // If no address, create delivery anyway but mark as requiring address
         const deliveryStatus = resolvedAddressId ? 'pending' : 'address_required';
 
+        const deliveryData: any = {
+          reservationId: createdReservation.id,
+          status: deliveryStatus,
+          deliveryPersonId: null, // Leave unassigned for admin assignment
+        };
+
+        // Only include addressId if it exists
+        if (resolvedAddressId) {
+          deliveryData.addressId = resolvedAddressId;
+        }
+
         const newDelivery = await prisma.delivery.create({
-          data: {
-            reservationId: createdReservation.id,
-            addressId: resolvedAddressId || null, // Allow null for address_required status
-            status: deliveryStatus,
-            deliveryPersonId: null, // Leave unassigned for admin assignment
-          },
+          data: deliveryData,
         });
         console.log('Unassigned delivery created successfully:', newDelivery.id, 'status:', deliveryStatus);
       } else {

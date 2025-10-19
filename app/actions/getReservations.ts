@@ -37,7 +37,7 @@ export default async function getReservations(params: IParams) {
       ...res.user,
       createdAt: res.user.createdAt.toISOString(),
       updatedAt: res.user.updatedAt.toISOString(),
-      emailVerified: res.user.emailVerified?.toISOString() || null,
+      emailVerified: res.user.isVerified || null,
     },
     payments: res.payments.map((p) => ({
       ...p,

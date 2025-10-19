@@ -18,6 +18,7 @@ model User {
   bankAccount    String?
   image          String?
   hashedPassword String?
+  favoriteIds    String[]  @default([])
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

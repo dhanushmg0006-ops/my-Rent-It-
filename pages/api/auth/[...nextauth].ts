@@ -13,8 +13,8 @@ function PrismaAdapter() {
 
   return {
     ...defaultAdapter,
-    createUser: (data: any) => {
-      return prisma.user.create({
+    async createUser(data: any) {
+      const user = await prisma.user.create({
         data: {
           name: data.name,
           email: data.email,
@@ -23,6 +23,47 @@ function PrismaAdapter() {
           isVerified: false, // use your schema field
         },
       });
+
+      // Return in NextAuth expected format
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        emailVerified: null, // NextAuth expects this field even though we don't use it
+        role: user.role,
+        isVerified: user.isVerified,
+      } as any;
+    },
+
+    async getUser(id: string) {
+      const user = await prisma.user.findUnique({ where: { id } });
+      if (!user) return null;
+
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        emailVerified: null, // NextAuth expects this field
+        role: user.role,
+        isVerified: user.isVerified,
+      } as any;
+    },
+
+    async getUserByEmail(email: string) {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) return null;
+
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+        emailVerified: null, // NextAuth expects this field
+        role: user.role,
+        isVerified: user.isVerified,
+      } as any;
     },
   };
 }

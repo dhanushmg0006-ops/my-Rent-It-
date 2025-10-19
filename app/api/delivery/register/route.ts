@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         aadharNumber,
         bankAccount,
         role: "delivery",
-        emailVerified: null,
+        isVerified: false,
       },
     });
 

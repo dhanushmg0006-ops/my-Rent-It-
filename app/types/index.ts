@@ -17,12 +17,12 @@ export type SafeRefund = Omit<Refund, "createdAt" | "updatedAt"> & {
 };
 
 // User without Date objects
-export type SafeUser = Omit<User, "createdAt" | "updatedAt" | "emailVerified" | "isVerified"> & {
+export type SafeUser = Omit<User, "createdAt" | "updatedAt" | "isVerified"> & {
   createdAt: string;
   updatedAt: string;
-  emailVerified: string | null;
-  role: string;            // "user", "admin", "delivery"
-  isVerified?: boolean;    // Added for delivery verification
+  emailVerified: boolean | null;  // Changed to match isVerified field
+  role: string;                  // "user", "admin", "delivery"
+  isVerified?: boolean;          // Keep for backward compatibility
 };
 
 // Reservation with related payments, refunds, user, and listing

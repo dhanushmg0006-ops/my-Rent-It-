@@ -17,8 +17,10 @@ export async function POST(req: Request) {
     const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
     if (!payment) return NextResponse.json({ error: "Payment not found" }, { status: 404 });
 
-    // Create refund in Razorpay
-    await razorpay.payments.refund(payment.paymentId, { amount: payment.amount * 100 });
+    // Create refund in Razorpay only if paymentId exists
+    if (payment.paymentId) {
+      await razorpay.payments.refund(payment.paymentId, { amount: payment.amount * 100 });
+    }
 
     // Save refund info in DB
     const refund = await prisma.refund.create({
