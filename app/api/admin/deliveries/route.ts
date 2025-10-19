@@ -61,9 +61,21 @@ export async function GET() {
       console.log('Fetching unassigned deliveries...');
       unassignedDeliveries = await prisma.delivery.findMany({
         where: {
-          OR: [
-            { deliveryPersonId: null }, // Unassigned deliveries
-            { status: 'address_required' } // Deliveries needing address setup
+          AND: [
+            {
+              OR: [
+                { deliveryPersonId: null }, // Unassigned deliveries
+                { status: 'address_required' } // Deliveries needing address setup
+              ]
+            },
+            {
+              NOT: {
+                OR: [
+                  { status: 'delivered' }, // Exclude delivered deliveries
+                  { status: 'cancelled' } // Exclude cancelled deliveries
+                ]
+              }
+            }
           ]
         },
         select: {
