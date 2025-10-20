@@ -40,22 +40,60 @@ interface Delivery {
 export default function DeliveryDashboard() {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [scope, setScope] = useState<'my' | 'all'>('my');
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCurrentUser = async () => {
+    try {
+      console.log("Fetching current user...");
+      const res = await axios.get("/api/currentUser");
+      console.log("Current user response:", res.data);
+      setUser(res.data);
+      return res.data;
+    } catch (error: any) {
+      console.error("Failed to fetch current user:", error);
+      return null;
+    }
+  };
 
   const fetchDeliveries = async () => {
     try {
+      console.log("Fetching deliveries...");
       const res = await axios.get("/api/delivery/get");
-      setDeliveries(res.data);
-    } catch {
-      toast.error("Failed to load deliveries");
+      console.log("Delivery response:", res.data);
+
+      // Handle different response formats
+      if (res.data.deliveries) {
+        setDeliveries(res.data.deliveries);
+      } else if (Array.isArray(res.data)) {
+        setDeliveries(res.data);
+      } else {
+        setDeliveries([]);
+      }
+
+      // Show error message if present
+      if (res.data.error && res.data.error !== 'Not authenticated') {
+        toast.error(res.data.message || 'Error loading deliveries');
+      }
+    } catch (error: any) {
+      console.error("Failed to load deliveries:", error);
+      toast.error(`Failed to load deliveries: ${error.response?.status || error.message}`);
+      setDeliveries([]);
     }
   };
 
   useEffect(() => {
-    fetchDeliveries(); // initial fetch
+    const initializeData = async () => {
+      setLoading(true);
+      await Promise.all([fetchCurrentUser(), fetchDeliveries()]);
+      setLoading(false);
+    };
+
+    initializeData();
 
     const interval = setInterval(() => {
-      fetchDeliveries(); // refresh every 5 seconds
-    }, 5000);
+      fetchDeliveries(); // refresh every 30 seconds
+    }, 30000);
 
     return () => clearInterval(interval);
   }, []);
@@ -77,6 +115,14 @@ export default function DeliveryDashboard() {
     return deliveries;
   }, [deliveries, scope]);
 
+  if (loading) {
+    return (
+      <div className="p-6 space-y-4 max-w-screen-lg mx-auto">
+        <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-4 max-w-screen-lg mx-auto">
       <div className="flex items-center justify-between">
@@ -89,6 +135,15 @@ export default function DeliveryDashboard() {
           <option value="my">My assignments</option>
           <option value="all">All deliveries</option>
         </select>
+      </div>
+
+      {/* Debug Information */}
+      <div className="bg-gray-100 p-4 rounded-lg text-sm">
+        <h3 className="font-semibold mb-2">Debug Info:</h3>
+        <p><strong>User:</strong> {user ? `${user.name || user.email} (${user.role})` : 'Not logged in'}</p>
+        <p><strong>Deliveries:</strong> {deliveries.length} found</p>
+        <p><strong>Scope:</strong> {scope}</p>
+        <p><strong>Environment:</strong> {process.env.NODE_ENV || 'production'}</p>
       </div>
       {visibleDeliveries.length === 0 && (
         <p className="text-sm text-ink-500">No deliveries to show.</p>
