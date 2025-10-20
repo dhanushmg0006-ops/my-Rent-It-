@@ -15,6 +15,8 @@ export async function GET() {
     const deliveryPersonCount = await prisma.deliveryPerson.count();
     const deliveryCountData = await prisma.delivery.count();
     const listingCount = await prisma.listing.count();
+    const reservationCount = await prisma.reservation.count();
+    const addressCount = await prisma.address.count();
 
     return NextResponse.json({
       message: 'Database connection successful',
@@ -24,16 +26,25 @@ export async function GET() {
         deliveryUsers: deliveryCount,
         deliveryPersons: deliveryPersonCount,
         deliveries: deliveryCountData,
-        listings: listingCount
+        listings: listingCount,
+        reservations: reservationCount,
+        addresses: addressCount
       },
-      usage: 'POST to /api/admin/seed to populate database'
+      usage: 'POST to /api/admin/seed to populate database',
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
     return NextResponse.json({
       message: 'Database connection failed',
       status: 'error',
       error: error instanceof Error ? error.message : 'Unknown error',
-      usage: 'Check DATABASE_URL environment variable'
+      usage: 'Check DATABASE_URL environment variable',
+      troubleshooting: [
+        'Ensure DATABASE_URL is set in environment variables',
+        'Verify MongoDB connection string is correct',
+        'Check if database server is running',
+        'Ensure Prisma schema is up to date'
+      ]
     }, { status: 500 });
   } finally {
     await prisma.$disconnect();
