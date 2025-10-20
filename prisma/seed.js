@@ -60,7 +60,7 @@ async function main() {
         role: 'delivery',
         isVerified: true,
         phone: userData.phone,
-        aadhaarNumber: userData.aadhaarNumber,
+        aadharNumber: userData.aadharNumber,
         bankAccount: userData.bankAccount,
       },
     });
@@ -70,10 +70,12 @@ async function main() {
       where: { userId: deliveryUser.id },
       update: {},
       create: {
-        userId: deliveryUser.id,
         phone: userData.phone,
         aadhaarNumber: userData.aadhaarNumber,
         bankAccount: userData.bankAccount,
+        user: {
+          connect: { id: deliveryUser.id }
+        }
       },
     });
 
@@ -112,22 +114,32 @@ async function main() {
   ];
 
   for (const listingData of listings) {
-    const listing = await prisma.listing.upsert({
-      where: { title: listingData.title },
-      update: {},
-      create: {
+    // Check if listing already exists by title and user
+    const existingListing = await prisma.listing.findFirst({
+      where: {
         title: listingData.title,
-        description: listingData.description,
-        imageSrc: listingData.imageSrc,
-        category: listingData.category,
-        locationValue: listingData.locationValue,
-        price: listingData.price,
-        itemCount: listingData.itemCount,
-        userId: admin.id, // Admin owns the listings
-      },
+        userId: admin.id
+      }
     });
 
-    console.log('✅ Created listing:', listing.title);
+    if (!existingListing) {
+      const listing = await prisma.listing.create({
+        data: {
+          title: listingData.title,
+          description: listingData.description,
+          imageSrc: listingData.imageSrc,
+          category: listingData.category,
+          locationValue: listingData.locationValue,
+          price: listingData.price,
+          itemCount: listingData.itemCount,
+          userId: admin.id, // Admin owns the listings
+        },
+      });
+
+      console.log('✅ Created listing:', listing.title);
+    } else {
+      console.log('⏭️  Listing already exists:', listingData.title);
+    }
   }
 
   // Create sample addresses for the admin user
@@ -151,27 +163,32 @@ async function main() {
   ];
 
   for (const addressData of addresses) {
-    const address = await prisma.address.upsert({
+    // Check if address already exists by street, city, and user
+    const existingAddress = await prisma.address.findFirst({
       where: {
-        userId_street_city: {
+        street: addressData.street,
+        city: addressData.city,
+        userId: admin.id
+      }
+    });
+
+    if (!existingAddress) {
+      const address = await prisma.address.create({
+        data: {
           userId: admin.id,
           street: addressData.street,
           city: addressData.city,
+          state: addressData.state,
+          postalCode: addressData.postalCode,
+          country: addressData.country,
+          phone: addressData.phone,
         },
-      },
-      update: {},
-      create: {
-        userId: admin.id,
-        street: addressData.street,
-        city: addressData.city,
-        state: addressData.state,
-        postalCode: addressData.postalCode,
-        country: addressData.country,
-        phone: addressData.phone,
-      },
-    });
+      });
 
-    console.log('✅ Created address:', address.city);
+      console.log('✅ Created address:', address.city);
+    } else {
+      console.log('⏭️  Address already exists:', addressData.city);
+    }
   }
 
   console.log('🎉 Database seeding completed successfully!');

@@ -9,9 +9,12 @@
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "prisma db seed",
+    "db:seed": "node prisma/seed.js",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
