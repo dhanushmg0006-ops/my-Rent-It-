@@ -46,7 +46,9 @@ export default function DeliveryDashboard() {
   const fetchCurrentUser = async () => {
     try {
       console.log("Fetching current user...");
-      const res = await axios.get("/api/currentUser");
+      const res = await axios.get("/api/currentUser", {
+        withCredentials: true
+      });
       console.log("Current user response:", res.data);
       setUser(res.data);
       return res.data;
@@ -59,7 +61,9 @@ export default function DeliveryDashboard() {
   const fetchDeliveries = async () => {
     try {
       console.log("Fetching deliveries...");
-      const res = await axios.get("/api/delivery/get");
+      const res = await axios.get("/api/delivery/get", {
+        withCredentials: true
+      });
       console.log("Delivery response:", res.data);
 
       // Handle different response formats
