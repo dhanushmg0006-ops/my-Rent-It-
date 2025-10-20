@@ -50,7 +50,13 @@ export async function GET() {
       return NextResponse.json({
         deliveries,
         user: currentUser,
-        type: 'assigned'
+        type: 'assigned',
+        debug: {
+          userId: currentUser.id,
+          userRole: currentUser.role,
+          deliveryPersonId: deliveryPerson.id,
+          deliveryCount: deliveries.length
+        }
       });
     }
 
@@ -78,7 +84,12 @@ export async function GET() {
       return NextResponse.json({
         deliveries,
         user: currentUser,
-        type: 'all_for_delivery_role'
+        type: 'all_for_delivery_role',
+        debug: {
+          userId: currentUser.id,
+          userRole: currentUser.role,
+          deliveryCount: deliveries.length
+        }
       });
     }
 
@@ -89,7 +100,11 @@ export async function GET() {
       message: 'You need delivery role or assignments to view deliveries',
       deliveries: [],
       user: currentUser,
-      type: 'no_access'
+      type: 'no_access',
+      debug: {
+        userId: currentUser.id,
+        userRole: currentUser.role
+      }
     });
   } catch (error) {
     console.error("❌ Delivery fetch error:", error);
