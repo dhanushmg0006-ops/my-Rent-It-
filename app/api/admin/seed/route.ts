@@ -4,9 +4,21 @@ import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
+export async function GET() {
+  return NextResponse.json({
+    message: 'Use POST method to seed the database',
+    usage: 'POST to /api/admin/seed',
+    status: 'ready'
+  });
+}
+
 export async function POST() {
   try {
     console.log('🌱 Starting production database seeding via API...');
+
+    // Test database connection first
+    await prisma.$connect();
+    console.log('✅ Database connection established');
 
     // Create admin user if not exists
     const existingAdmin = await prisma.user.findFirst({
@@ -25,6 +37,8 @@ export async function POST() {
         },
       });
       console.log('✅ Created admin user');
+    } else {
+      console.log('✅ Admin user already exists');
     }
 
     // Create delivery users if not exists
