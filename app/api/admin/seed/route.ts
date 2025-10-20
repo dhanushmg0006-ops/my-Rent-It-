@@ -5,11 +5,39 @@ import bcrypt from "bcrypt";
 const prisma = new PrismaClient();
 
 export async function GET() {
-  return NextResponse.json({
-    message: 'Use POST method to seed the database',
-    usage: 'POST to /api/admin/seed',
-    status: 'ready'
-  });
+  try {
+    // Test database connection
+    await prisma.$connect();
+
+    // Check if data already exists
+    const adminCount = await prisma.user.count({ where: { role: 'admin' } });
+    const deliveryCount = await prisma.user.count({ where: { role: 'delivery' } });
+    const deliveryPersonCount = await prisma.deliveryPerson.count();
+    const deliveryCountData = await prisma.delivery.count();
+    const listingCount = await prisma.listing.count();
+
+    return NextResponse.json({
+      message: 'Database connection successful',
+      status: 'connected',
+      data: {
+        adminUsers: adminCount,
+        deliveryUsers: deliveryCount,
+        deliveryPersons: deliveryPersonCount,
+        deliveries: deliveryCountData,
+        listings: listingCount
+      },
+      usage: 'POST to /api/admin/seed to populate database'
+    });
+  } catch (error) {
+    return NextResponse.json({
+      message: 'Database connection failed',
+      status: 'error',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      usage: 'Check DATABASE_URL environment variable'
+    }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
 export async function POST() {
@@ -19,6 +47,9 @@ export async function POST() {
     // Test database connection first
     await prisma.$connect();
     console.log('✅ Database connection established');
+
+    let createdCount = 0;
+    let skippedCount = 0;
 
     // Create admin user if not exists
     const existingAdmin = await prisma.user.findFirst({
@@ -37,8 +68,10 @@ export async function POST() {
         },
       });
       console.log('✅ Created admin user');
+      createdCount++;
     } else {
       console.log('✅ Admin user already exists');
+      skippedCount++;
     }
 
     // Create delivery users if not exists
@@ -98,6 +131,10 @@ export async function POST() {
         });
 
         console.log('✅ Created delivery user:', deliveryUser.email);
+        createdCount++;
+      } else {
+        console.log('⏭️  Delivery user already exists:', userData.email);
+        skippedCount++;
       }
     }
 
@@ -159,6 +196,10 @@ export async function POST() {
             },
           });
           console.log('✅ Created listing:', listingData.title);
+          createdCount++;
+        } else {
+          console.log('⏭️  Listing already exists:', listingData.title);
+          skippedCount++;
         }
       }
 
@@ -204,6 +245,10 @@ export async function POST() {
             },
           });
           console.log('✅ Created address:', addressData.city);
+          createdCount++;
+        } else {
+          console.log('⏭️  Address already exists:', addressData.city);
+          skippedCount++;
         }
       }
 
@@ -244,6 +289,10 @@ export async function POST() {
               },
             });
             console.log('✅ Created sample delivery');
+            createdCount++;
+          } else {
+            console.log('⏭️  Delivery already exists for reservation');
+            skippedCount++;
           }
         }
       }
@@ -251,14 +300,33 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: 'Production database seeded successfully!'
+      message: 'Production database seeded successfully!',
+      summary: {
+        created: createdCount,
+        skipped: skippedCount,
+        total: createdCount + skippedCount
+      },
+      details: {
+        adminUsers: existingAdmin ? 'Already exists' : 'Created',
+        deliveryUsers: '3 users processed',
+        listings: '3 listings processed',
+        addresses: '2 addresses processed',
+        deliveries: '1 delivery processed'
+      }
     });
 
   } catch (error) {
     console.error('❌ Error seeding database:', error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: 'Check DATABASE_URL environment variable and database connectivity',
+      troubleshooting: [
+        'Ensure DATABASE_URL is set in Vercel environment variables',
+        'Verify MongoDB database is accessible',
+        'Check Prisma schema matches database structure',
+        'Ensure all required environment variables are configured'
+      ]
     }, { status: 500 });
   } finally {
     await prisma.$disconnect();
