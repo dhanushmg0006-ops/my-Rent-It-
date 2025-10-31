@@ -272,6 +272,13 @@ export async function POST(request: Request) {
 
     console.log('Found delivery:', delivery.id, 'status:', delivery.status);
 
+    if (delivery.status === 'delivered' || delivery.status === 'cancelled') {
+      console.log('Cannot assign delivery with terminal status:', delivery.status);
+      return NextResponse.json({
+        error: `Delivery already ${delivery.status}`
+      }, { status: 400 });
+    }
+
     // Find the user to assign to
     console.log('Looking up user:', userId);
     const user = await prisma.user.findUnique({ where: { id: userId } });

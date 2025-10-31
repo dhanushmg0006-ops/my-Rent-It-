@@ -16,32 +16,66 @@ export default async function getReservations(params: IParams) {
 
   const reservations = await prisma.reservation.findMany({
     where: query,
-    include: {
-      listing: true,
-      user: true,
-      payments: true, // ✅ include payments
-    },
     orderBy: { createdAt: "desc" },
   });
 
-  return reservations.map((res) => ({
-    ...res,
-    createdAt: res.createdAt.toISOString(),
-    startDate: res.startDate.toISOString(),
-    endDate: res.endDate.toISOString(),
-    listing: {
-      ...res.listing,
-      createdAt: res.listing.createdAt.toISOString(),
-    },
-    user: {
-      ...res.user,
-      createdAt: res.user.createdAt.toISOString(),
-      updatedAt: res.user.updatedAt.toISOString(),
-      emailVerified: res.user.isVerified || null,
-    },
-    payments: res.payments.map((p) => ({
-      ...p,
-      createdAt: p.createdAt.toISOString(),
-    })),
-  }));
+  if (reservations.length === 0) {
+    return [];
+  }
+
+  const listingIds = Array.from(new Set(reservations.map((r) => r.listingId).filter(Boolean)));
+  const userIds = Array.from(new Set(reservations.map((r) => r.userId).filter(Boolean)));
+  const reservationIds = reservations.map((r) => r.id);
+
+  const [listings, users, payments] = await Promise.all([
+    prisma.listing.findMany({ where: { id: { in: listingIds } } }),
+    prisma.user.findMany({ where: { id: { in: userIds } } }),
+    prisma.payment.findMany({ where: { reservationId: { in: reservationIds } } }),
+  ]);
+
+  const listingMap = new Map(listings.map((l) => [l.id, l]));
+  const userMap = new Map(users.map((u) => [u.id, u]));
+  const paymentMap = payments.reduce<Record<string, typeof payments>>((acc, payment) => {
+    if (!acc[payment.reservationId]) acc[payment.reservationId] = [];
+    acc[payment.reservationId].push(payment);
+    return acc;
+  }, {});
+
+  return reservations
+    .map((res) => {
+      const listing = listingMap.get(res.listingId);
+      const user = userMap.get(res.userId);
+
+      if (!listing) {
+        console.warn(`Reservation ${res.id} references missing listing ${res.listingId}. Skipping.`);
+        return null;
+      }
+
+      if (!user) {
+        console.warn(`Reservation ${res.id} references missing user ${res.userId}. Skipping.`);
+        return null;
+      }
+
+      return {
+        ...res,
+        createdAt: res.createdAt.toISOString(),
+        startDate: res.startDate.toISOString(),
+        endDate: res.endDate.toISOString(),
+        listing: {
+          ...listing,
+          createdAt: listing.createdAt.toISOString(),
+        },
+        user: {
+          ...user,
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString(),
+          emailVerified: user.isVerified || null,
+        },
+        payments: (paymentMap[res.id] || []).map((p) => ({
+          ...p,
+          createdAt: p.createdAt.toISOString(),
+        })),
+      };
+    })
+    .filter((res): res is NonNullable<typeof res> => res !== null);
 }

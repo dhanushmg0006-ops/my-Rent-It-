@@ -18,26 +18,106 @@ export async function GET() {
           userId: currentUser.id,
         },
       },
-      include: {
-        reservation: {
-          include: {
-            listing: true, // product details
-            user: true, // to ensure we have the user
-          },
-        },
-        address: true, // delivery address
+      select: {
+        id: true,
+        status: true,
+        addressId: true,
         deliveryPerson: {
           include: {
-            user: true, // delivery person details
+            user: true,
           },
         },
+        reservation: {
+          select: {
+            id: true,
+            listingId: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+        createdAt: true,
+        updatedAt: true,
       },
       orderBy: {
         createdAt: "desc",
       },
     });
 
-    return NextResponse.json(deliveries);
+    if (!deliveries.length) {
+      return NextResponse.json([]);
+    }
+
+    const listingIds = Array.from(
+      new Set(deliveries.map((d) => d.reservation.listingId).filter(Boolean))
+    );
+    const addressIds = Array.from(
+      new Set(deliveries.map((d) => d.addressId).filter(Boolean))
+    );
+
+    const [listings, addresses] = await Promise.all([
+      listingIds.length
+        ? prisma.listing.findMany({
+            where: { id: { in: listingIds } },
+            select: { id: true, title: true, imageSrc: true },
+          })
+        : Promise.resolve([]),
+      addressIds.length
+        ? prisma.address.findMany({
+            where: { id: { in: addressIds } },
+            select: {
+              id: true,
+              street: true,
+              city: true,
+              state: true,
+              postalCode: true,
+              country: true,
+              phone: true,
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const listingMap = new Map(listings.map((l) => [l.id, l]));
+    const addressMap = new Map(addresses.map((a) => [a.id, a]));
+
+    const safeDeliveries = deliveries.map((delivery) => {
+      const listing = listingMap.get(delivery.reservation.listingId) || {
+        id: delivery.reservation.listingId,
+        title: "Listing unavailable",
+        imageSrc: "/images/placeholder.jpg",
+      };
+
+      const address = delivery.addressId
+        ? addressMap.get(delivery.addressId) || {
+            id: delivery.addressId,
+            street: "Address pending",
+            city: "",
+            state: "",
+            postalCode: "",
+            country: "",
+            phone: "",
+          }
+        : {
+            id: null,
+            street: "Address pending",
+            city: "",
+            state: "",
+            postalCode: "",
+            country: "",
+            phone: "",
+          };
+
+      return {
+        ...delivery,
+        reservation: {
+          ...delivery.reservation,
+          listing,
+        },
+        address,
+      };
+    });
+
+    return NextResponse.json(safeDeliveries);
   } catch (error) {
     console.error("Deliveries error:", error);
     return NextResponse.json(

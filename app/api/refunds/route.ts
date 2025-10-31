@@ -2,10 +2,16 @@ import { NextResponse } from "next/server";
 import prisma from "@/app/libs/prismadb";
 import Razorpay from "razorpay";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
+const hasRazorpayCredentials = Boolean(
+  process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET
+);
+
+const razorpay = hasRazorpayCredentials
+  ? new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID!,
+      key_secret: process.env.RAZORPAY_KEY_SECRET!,
+    })
+  : null;
 
 export async function POST(req: Request) {
   try {
@@ -26,11 +32,23 @@ export async function POST(req: Request) {
     if (!payment || !payment.paymentId)
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
 
-    // ✅ Automatically create refund in Razorpay
-    const refund = await razorpay.payments.refund(payment.paymentId as string, {
-      amount: payment.amount * 100, // amount in paise
-      notes: { reason },
-    });
+    let refundResult: any = null;
+    let refundStatus: "completed" | "pending" = "completed";
+
+    if (hasRazorpayCredentials && razorpay) {
+      try {
+        refundResult = await razorpay.payments.refund(payment.paymentId as string, {
+          amount: payment.amount * 100, // amount in paise
+          notes: { reason },
+        });
+      } catch (gatewayError) {
+        console.error("Razorpay refund failed:", gatewayError);
+        refundStatus = "pending";
+      }
+    } else {
+      console.warn("Razorpay credentials missing. Creating offline refund record.");
+      refundStatus = "pending";
+    }
 
     // Save refund in database
     await prisma.refund.create({
@@ -40,7 +58,7 @@ export async function POST(req: Request) {
         userId: reservation.userId,
         reason,
         amount: payment.amount,
-        status: "completed",
+        status: refundStatus,
       },
     });
 
@@ -50,7 +68,13 @@ export async function POST(req: Request) {
       data: { status: "cancelled" }, // make sure you added `status` field in Reservation model
     });
 
-    return NextResponse.json({ message: "Refund successful and reservation cancelled", refund });
+    return NextResponse.json({
+      message:
+        refundStatus === "completed"
+          ? "Refund successful and reservation cancelled"
+          : "Reservation cancelled. Refund will be processed manually.",
+      refund: refundResult,
+    });
   } catch (err) {
     console.error("Refund error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

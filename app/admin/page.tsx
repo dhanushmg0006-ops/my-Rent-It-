@@ -15,6 +15,8 @@ interface Listing { id: string; title: string; price: number; category: string; 
 interface Reservation { id: string; totalPrice: number; status: string; userId: string; listingId: string }
 interface Refund { id: string; amount: number; status: string; reason?: string; userId: string; reservationId: string }
 
+axios.defaults.withCredentials = true;
+
 const AdminDashboard = () => {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
@@ -32,7 +34,7 @@ const AdminDashboard = () => {
     const fetchAdminData = async () => {
       try {
         // Check current session
-        const sessionRes = await axios.get("/api/auth/session");
+        const sessionRes = await axios.get("/api/auth/session", { withCredentials: true });
         const currentUser = sessionRes.data?.user;
         if (!currentUser || currentUser.role !== "admin") {
           toast.error("Access Denied");
@@ -42,11 +44,11 @@ const AdminDashboard = () => {
 
         // Fetch all admin data
         const [usersRes, listingsRes, reservationsRes, refundsRes, deliveryAdminRes] = await Promise.all([
-          axios.get("/api/admin/users"),
-          axios.get("/api/admin/listings"),
-          axios.get("/api/admin/reservations"),
-          axios.get("/api/admin/refunds"),
-          axios.get("/api/admin/deliveries"),
+          axios.get("/api/admin/users", { withCredentials: true }),
+          axios.get("/api/admin/listings", { withCredentials: true }),
+          axios.get("/api/admin/reservations", { withCredentials: true }),
+          axios.get("/api/admin/refunds", { withCredentials: true }),
+          axios.get("/api/admin/deliveries", { withCredentials: true }),
         ]);
 
         setUsers(usersRes.data);
@@ -139,9 +141,9 @@ const AdminDashboard = () => {
                     onChange={async (e) => {
                       const role = e.target.value;
                       try {
-                        await axios.patch('/api/admin/users', { userId: u.id, role });
+                        await axios.patch('/api/admin/users', { userId: u.id, role }, { withCredentials: true });
                         toast.success('Role updated');
-                        const res = await axios.get('/api/admin/users');
+                        const res = await axios.get('/api/admin/users', { withCredentials: true });
                         setUsers(res.data);
                       } catch (err: any) {
                         toast.error(err?.response?.data?.error || 'Failed to update role');
@@ -166,9 +168,9 @@ const AdminDashboard = () => {
               className="btn-primary px-4 py-2 text-sm"
               onClick={async () => {
                 try {
-                  const res = await axios.post('/api/admin/deliveries', { deliveryId: 'reset-all' });
+                  const res = await axios.post('/api/admin/deliveries', { deliveryId: 'reset-all' }, { withCredentials: true });
                   toast.success(res.data.message || 'Deliveries reset');
-                  const { data } = await axios.get('/api/admin/deliveries');
+                  const { data } = await axios.get('/api/admin/deliveries', { withCredentials: true });
                   setUnassigned(data.unassignedDeliveries || []);
                   setDeliveryPeople(data.deliveryUsers || []);
                 } catch (e: any) {
@@ -180,9 +182,9 @@ const AdminDashboard = () => {
               className="btn-secondary px-4 py-2 text-sm"
               onClick={async () => {
                 try {
-                  const res = await axios.post('/api/admin/deliveries', { deliveryId: 'test-create' });
+                  const res = await axios.post('/api/admin/deliveries', { deliveryId: 'test-create' }, { withCredentials: true });
                   toast.success('Test delivery created');
-                  const { data } = await axios.get('/api/admin/deliveries');
+                  const { data } = await axios.get('/api/admin/deliveries', { withCredentials: true });
                   setUnassigned(data.unassignedDeliveries || []);
                   setDeliveryPeople(data.deliveryUsers || []);
                 } catch (e: any) {
@@ -234,9 +236,9 @@ const AdminDashboard = () => {
                         await axios.post('/api/admin/deliveries', {
                           deliveryId: d.id,
                           userId: deliveryPersonId,
-                        });
+                        }, { withCredentials: true });
                         toast.success('Assigned successfully');
-                        const { data } = await axios.get('/api/admin/deliveries');
+                        const { data } = await axios.get('/api/admin/deliveries', { withCredentials: true });
                         setUnassigned(data.unassignedDeliveries || []);
                         setDeliveryPeople(data.deliveryUsers || []);
                         setAssignment((prev) => ({ ...prev, [d.id]: '' }));

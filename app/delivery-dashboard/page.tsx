@@ -114,10 +114,13 @@ export default function DeliveryDashboard() {
 
   const visibleDeliveries = useMemo(() => {
     if (scope === 'all') return deliveries;
-    // For 'my' scope, filter deliveries assigned to current user
-    // The API should already handle this based on user's role and DeliveryPerson record
-    return deliveries;
-  }, [deliveries, scope]);
+    if (!user?.id) return [];
+
+    return deliveries.filter((delivery) => {
+      const assignedUserId = delivery.deliveryPerson?.user?.id;
+      return assignedUserId === user.id;
+    });
+  }, [deliveries, scope, user?.id]);
 
   if (loading) {
     return (
