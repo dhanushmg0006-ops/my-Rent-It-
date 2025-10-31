@@ -35,9 +35,14 @@ export default async function getReservations(params: IParams) {
 
   const listingMap = new Map(listings.map((l) => [l.id, l]));
   const userMap = new Map(users.map((u) => [u.id, u]));
-  const paymentMap = payments.reduce<Record<string, typeof payments>>((acc, payment) => {
+  const paymentMap = payments.reduce<Record<string, typeof payments[0][]>>((acc, payment) => {
+    if (!payment.reservationId) {
+      console.warn(`Payment ${payment.id} missing reservationId. Skipping.`);
+      return acc;
+    }
+
     if (!acc[payment.reservationId]) acc[payment.reservationId] = [];
-    acc[payment.reservationId].push(payment);
+    acc[payment.reservationId]!.push(payment);
     return acc;
   }, {});
 
