@@ -1,0 +1,81 @@
+@startuml
+left to right direction
+
+actor Visitor
+actor "Registered User" as User
+actor Admin
+actor "Delivery Partner" as Courier
+actor "Payment Gateway" as Payment
+
+rectangle "Rent-It Platform" {
+  usecase "Browse Listings" as UC_Browse
+  usecase "View Listing Details" as UC_ViewListing
+  usecase "Register Account" as UC_Register
+  usecase "Authenticate" as UC_Login
+  usecase "Manage Profile & Addresses" as UC_Profile
+  usecase "Manage Favorites" as UC_Favorites
+  usecase "Create Reservation" as UC_Reserve
+  usecase "Checkout & Pay" as UC_Checkout
+  usecase "Track Delivery & Chat" as UC_Track
+  usecase "Cancel Reservation" as UC_Cancel
+  usecase "Request Refund" as UC_Refund
+
+  usecase "Manage Listings" as UC_AdminListings
+  usecase "Manage Reservations" as UC_AdminReservations
+  usecase "Manage Users & Delivery Partners" as UC_AdminUsers
+  usecase "Assign Deliveries" as UC_AdminDeliveries
+  usecase "Process Refunds" as UC_AdminRefunds
+
+  usecase "View Assigned Deliveries" as UC_ViewDeliveries
+  usecase "Update Delivery Status" as UC_UpdateDelivery
+
+  usecase "Process Payment" as UC_ProcessPayment
+  usecase "Verify Payment" as UC_VerifyPayment
+}
+
+Visitor --> UC_Browse
+Visitor --> UC_ViewListing
+Visitor --> UC_Register
+Visitor --> UC_Login
+
+User --> UC_Browse
+User --> UC_ViewListing
+User --> UC_Login
+User --> UC_Profile
+User --> UC_Favorites
+User --> UC_Reserve
+User --> UC_Checkout
+User --> UC_Track
+User --> UC_Cancel
+User --> UC_Refund
+
+Admin --> UC_AdminListings
+Admin --> UC_AdminReservations
+Admin --> UC_AdminUsers
+Admin --> UC_AdminDeliveries
+Admin --> UC_AdminRefunds
+Admin --> UC_Refund
+
+Courier --> UC_ViewDeliveries
+Courier --> UC_UpdateDelivery
+
+Payment --> UC_ProcessPayment
+Payment --> UC_VerifyPayment
+
+UC_Checkout ..> UC_ProcessPayment : <<include>>
+UC_Checkout ..> UC_VerifyPayment : <<include>>
+UC_Reserve ..> UC_Checkout : <<include>>
+UC_Reserve ..> UC_Track : <<include>>
+UC_AdminDeliveries ..> UC_ViewDeliveries : <<include>>
+UC_AdminDeliveries ..> UC_UpdateDelivery : <<include>>
+UC_Refund ..> UC_AdminRefunds : <<include>>
+UC_AdminRefunds ..> UC_VerifyPayment : <<include>>
+@enduml
+
+
+
+
+
+
+
+

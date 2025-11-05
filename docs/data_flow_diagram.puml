@@ -1,0 +1,53 @@
+@startuml
+left to right direction
+skinparam linetype ortho
+skinparam componentStyle rectangle
+skinparam arrowThickness 1.2
+skinparam defaultFontSize 18
+skinparam defaultFontName "Segoe UI"
+skinparam ArrowFontStyle italic
+skinparam packageTitleFontSize 20
+
+actor User as UserU
+actor "Delivery Partner" as Courier
+actor Admin as AdminA
+
+rectangle Client as "Next.js Client\n(Web App)"
+rectangle Checkout as "Razorpay Checkout\n(widget)"
+rectangle OrderAPI as "Payment Order Route\n(/api/razorpay/order)"
+cloud Razorpay as "Razorpay Gateway"
+rectangle VerifyAPI as "Verification API\n(/api/razorpay/verify)"
+database MongoDB as "MongoDB\n(Prisma Models)"
+rectangle DeliveryAPI as "Delivery API\n(/api/delivery/get)"
+rectangle AdminUI as "Admin Dashboard\n(app/admin)"
+
+UserU --> Client : Search criteria\n+ booking details
+Client --> OrderAPI : Amount + metadata
+OrderAPI --> Razorpay : Create order
+Razorpay --> Client : Order ID + key
+Client --> Checkout : Payment payload
+Checkout --> Razorpay : Card/UPI data
+Razorpay --> Checkout : payment_id + signature
+Checkout --> Client : Payment proof
+
+Client --> VerifyAPI : Reservation data + payment proof
+VerifyAPI --> Razorpay : Verify signature
+Razorpay --> VerifyAPI : Signature status
+VerifyAPI --> MongoDB : Persist reservation\n+ payment + delivery
+MongoDB --> VerifyAPI : IDs + status
+VerifyAPI --> Client : Confirmation (reservationId, deliveryId)
+Client --> UserU : Booking confirmation\n+ delivery ETA
+
+VerifyAPI --> DeliveryAPI : Delivery created event
+DeliveryAPI --> MongoDB : Update delivery record
+MongoDB --> DeliveryAPI : Delivery status snapshot
+DeliveryAPI --> Courier : Assignment details\n+ status updates
+Courier --> DeliveryAPI : Status updates
+
+MongoDB --> AdminUI : Operational data
+AdminUI --> MongoDB : Admin updates
+AdminUI --> AdminA : Dashboards + reports
+AdminA --> AdminUI : Management actions
+
+@enduml
+

@@ -1,0 +1,61 @@
+@startuml
+title Reservation, Payment, and Delivery Flow
+autonumber
+
+actor User
+participant "Next.js Client" as Client
+participant "Listings API (/api/listings/{id})" as ListingsAPI
+participant "Payment Order Route (/api/razorpay/order)" as OrderAPI
+participant "Razorpay Checkout" as Checkout
+participant "Razorpay Gateway" as Razorpay
+participant "Verification Route (/api/razorpay/verify)" as VerifyAPI
+database "Prisma (MongoDB)" as Prisma
+participant "Delivery API (/api/delivery/get)" as DeliveryAPI
+actor "Delivery Partner" as Courier
+participant "Delivery Dashboard" as DeliveryUI
+
+User -> Client: Choose listing & start checkout
+Client -> ListingsAPI: GET /api/listings/{id}
+ListingsAPI -> Prisma: findUnique(listingId)
+Prisma --> ListingsAPI: Listing details
+ListingsAPI --> Client: Listing payload
+
+Client -> OrderAPI: POST amount for Razorpay order
+OrderAPI -> Razorpay: orders.create(options)
+Razorpay --> OrderAPI: orderId, amount, key
+OrderAPI --> Client: Order payload
+
+Client -> Checkout: open(orderId, user details)
+Checkout -> Razorpay: Process payment
+Razorpay --> Checkout: payment_id, signature
+Checkout --> Client: razorpay_order_id, razorpay_payment_id, signature
+
+Client -> VerifyAPI: POST payment + reservation data
+activate VerifyAPI
+VerifyAPI -> VerifyAPI: Validate HMAC signature
+VerifyAPI -> Prisma: address.findUnique(addressId)
+Prisma --> VerifyAPI: Address details
+VerifyAPI -> Prisma: reservation.create (with nested payment)
+Prisma --> VerifyAPI: Reservation + Payment
+VerifyAPI -> Prisma: delivery.create (reservation, address)
+Prisma --> VerifyAPI: Delivery record
+VerifyAPI --> Client: success(reservationId, deliveryId)
+deactivate VerifyAPI
+
+Client -> User: Show confirmation & delivery tracking link
+
+note over Client
+Reservation saved with paid status
+end note
+
+== Delivery assignment ==
+
+Courier -> DeliveryUI: Sign in to dashboard
+DeliveryUI -> DeliveryAPI: GET /api/delivery/get
+DeliveryAPI -> Prisma: delivery.findMany(include reservation, address, listing)
+Prisma --> DeliveryAPI: Delivery list
+DeliveryAPI --> DeliveryUI: Deliveries with assignments
+DeliveryUI --> Courier: Display pending deliveries
+
+@enduml
+
